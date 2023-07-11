@@ -1,0 +1,11 @@
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\dal.dll
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\dal.pdb
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\MySql.Data.dll
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\MySql.Data.Entity.dll
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\Npgsql.dll
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\System.Data.SQLite.dll
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\Mono.Security.dll
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\Npgsql.xml
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\bin\Debug\System.Data.SQLite.xml
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\obj\Debug\dal.dll
+D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\dal\obj\Debug\dal.pdb

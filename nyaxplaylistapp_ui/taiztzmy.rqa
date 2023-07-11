@@ -1,0 +1,748 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using dal;
+using System.Diagnostics;
+using System.Threading;
+using System.IO;
+
+namespace nyaxplaylistapp
+{
+    /// <summary> 
+    /// class to loop through files in folder and create a
+    /// json formated string for append into a file to be used by the browser
+    /// </summary>    
+
+    public partial class create_playlist : Form
+    {
+        public string TAG;
+        //Event declaration:
+        //event for publishing messages to output
+        public event EventHandler<notificationmessageEventArgs> _notificationmessageEventname;
+        //event for showing progress in long running tasks
+        public event EventHandler<progressBarNotificationEventArgs> _progressBarNotificationEventname;
+        //countdown 
+        Stopwatch stopWatch = new Stopwatch();
+        //root path where this application is running at
+        public string _apppath;
+        //hold the folder path
+        string strpathfolder = "";
+        //output file to append the playlist items
+        string str_file_to_create = "";
+        //list to hold messages
+        public List<notificationdto> _lstnotificationdto = new List<notificationdto>();
+        //global variables for playlist
+        string strQuote, strfilenamewithnoextension, strfilename, strfilesize, strfiletype;
+        //global total files counta
+        int _total_media_files = 0;
+        //set the global current position counter for use when creating json output
+        int _current_media_file_pos = 0;
+
+        public create_playlist()
+        {
+            InitializeComponent();
+
+            TAG = this.GetType().Name;
+
+            AppDomain.CurrentDomain.UnhandledException += new
+UnhandledExceptionEventHandler(UnhandledException);
+            Application.ThreadException += new ThreadExceptionEventHandler(ThreadException);
+
+            //Subscribing to the event: 
+            //Dynamically:
+            //EventName += HandlerName;
+            _notificationmessageEventname += notificationmessageHandler;
+            _progressBarNotificationEventname += progressBarNotificationHandler;
+
+            _notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("finished form load", TAG));
+
+        }
+
+        void UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            Exception ex = (Exception)e.ExceptionObject;
+            this._notificationmessageEventname.Invoke(sender, new notificationmessageEventArgs(ex.Message, TAG));
+        }
+
+        void ThreadException(object sender, ThreadExceptionEventArgs e)
+        {
+            Exception ex = e.Exception;
+            this._notificationmessageEventname.Invoke(sender, new notificationmessageEventArgs(ex.Message, TAG));
+        }
+
+        //Event handler declaration:
+        public void notificationmessageHandler(object sender, notificationmessageEventArgs args)
+        {
+            /* Handler logic */
+
+            //Invoke(new Action(() =>
+            //{
+
+            notificationdto _notificationdto = new notificationdto();
+
+            DateTime currentDate = DateTime.Now;
+            String dateTimenow = currentDate.ToString("dd-MM-yyyy HH:mm:ss");
+
+            String _logtext = Environment.NewLine + "[ " + dateTimenow + " ]   " + args.message;
+
+            _notificationdto._notification_message = _logtext;
+            _notificationdto._created_datetime = dateTimenow;
+            _notificationdto.TAG = args.TAG;
+
+            _lstnotificationdto.Add(_notificationdto);
+
+            var _lstmsgdto = from msgdto in _lstnotificationdto
+                             orderby msgdto._created_datetime descending
+                             select msgdto._notification_message;
+
+            String[] _logflippedlines = _lstmsgdto.ToArray();
+
+            txtlog.Lines = _logflippedlines;
+
+            notifyIconntharene.BalloonTipIcon = ToolTipIcon.Info;
+            notifyIconntharene.BalloonTipText = _logtext;
+            notifyIconntharene.Text = args.TAG;
+            notifyIconntharene.BalloonTipTitle = args.TAG;
+            notifyIconntharene.ShowBalloonTip(2000);
+            notifyIconntharene.BalloonTipClicked += new EventHandler(notifyIconntharene_BalloonTipClicked);
+
+            //}));
+
+        }
+
+        void notifyIconntharene_BalloonTipClicked(object sender, EventArgs e)
+        {
+            this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs(get_app_info(), TAG));
+        }
+
+        //Event handler declaration:
+        public void progressBarNotificationHandler(object sender, progressBarNotificationEventArgs args)
+        {
+            /* Handler logic */
+            toolStripProgressBar.Maximum = args.ProgressMaximum;
+
+            if (args.ProgressPercentage == -1)
+            {
+                toolStripProgressBar.Value = 0;
+                lblprogresscounta.Text = string.Empty;
+            }
+            else
+            {
+                Invoke(new Action(() =>
+                {
+                    lblprogresscounta.Invoke(new Action(() =>
+                    {
+                        lblprogresscounta.Text = args.ProgressPercentage.ToString() + @"/" + args.ProgressMaximum.ToString();
+                    }));
+
+                    toolStripProgressBar.PerformStep();
+                }));
+            }
+            //if percentage is equal to maximum we are done reset 
+            if (args.ProgressPercentage == args.ProgressMaximum)
+            {
+                //lblprogresscounta.Visible = false;
+                //toolStripProgressBar.Value = 0;
+                //lblprogresscounta.Text = string.Empty;
+            }
+        }
+
+        private void btngenerate_playlist_json_Click(object sender, EventArgs e)
+        {
+            //reset progress controls
+            toolStripProgressBar.Value = 0;
+            lblprogresscounta.Text = string.Empty;
+
+            //get the selected media type
+            var _selected_media_type = cbomediatype.Text;
+            //log the selected media type
+            this._notificationmessageEventname.Invoke(sender, new notificationmessageEventArgs("creating playlist for media [ " + _selected_media_type + " ]", TAG));
+            switch (_selected_media_type)
+            {
+                case DBContract.movie:
+                    //path folder
+                    strpathfolder = _apppath + @"\movie\";
+                    //output file to append playlist item
+                    str_file_to_create = @"movie.json";
+                    break;
+                case DBContract.video:
+                    //path folder
+                    strpathfolder = _apppath + @"\video\";
+                    //output file to append playlist item
+                    str_file_to_create = @"video.json";
+                    break;
+                case DBContract.audio:
+                    //path folder
+                    strpathfolder = _apppath + @"\audio\";
+                    //output file to append playlist item
+                    str_file_to_create = @"audio.json";
+                    break;
+                case DBContract.series:
+                    //path folder
+                    strpathfolder = _apppath + @"\series\";
+                    //output file to append playlist item
+                    str_file_to_create = @"series.json";
+                    break;
+            }
+            //combine the folder path with the file name to contsruct a readable url
+            str_file_to_create = strpathfolder + str_file_to_create;
+            //create path if not exists
+            if (!Directory.Exists(strpathfolder))
+                Directory.CreateDirectory(strpathfolder);
+            //if output file exists delete then create new
+            if (File.Exists(str_file_to_create))
+            {
+                File.Delete(str_file_to_create);
+                File.Create(str_file_to_create).Close();
+            }
+
+            get_files_in_folder(_selected_media_type);
+
+        }
+
+        void get_files_in_folder(string _selected_media_type)
+        {
+            //variable to hold path template
+            string _str_path = @"D:\data\20170628\";
+
+            //if root folder does not exists return
+            if (!Directory.Exists(_str_path)) return;
+
+            //get all files in the given folder
+            var _arr_files_in_dir = Directory.GetFiles(_str_path, "*.*", SearchOption.AllDirectories);
+
+            //reset the total media files count
+            _total_media_files = 0;
+
+            //append the selected media type to the path
+            switch (_selected_media_type)
+            {
+                case DBContract.movie:
+                    //folder with media files
+                    _str_path = _str_path + DBContract.movie;
+                    //filter for mp4 files that are compatible with browsers
+                    _arr_files_in_dir = Directory.GetFiles(_str_path, "*.mp4*", SearchOption.AllDirectories);
+                    //loop through each file, get  file info and format it into json and append into output file.
+                    var _files_count = _arr_files_in_dir.Length;
+                    var _iterator_counta = 0;
+                    _total_media_files = _files_count;
+
+                    foreach (var _str_file in _arr_files_in_dir)
+                    {
+                        //current file
+                        var _current_file = _str_file;
+                        //log the current file name 
+                        this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("processing file [ " + _current_file + " ]", TAG));
+                        //get file information and populate variables
+                        FileInfo inf = new FileInfo(_current_file);
+                        //size of File in kilobytes
+                        strfilesize = inf.Length.ToString();
+                        //file name with extension
+                        strfilename = inf.Name;
+                        //file type is the extension
+                        strfiletype = inf.Extension.Split(new[] { "." }, StringSplitOptions.None)[1];
+
+                        //escape quotes with the verbatim operator
+                        strQuote = @"""";
+                        //file name with no extension
+                        strfilenamewithnoextension = Path.GetFileNameWithoutExtension(_current_file);
+                        //log the current output file path  
+                        this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("ouput file [ " + str_file_to_create + " ]", TAG));
+                        //files count
+                        _files_count = _arr_files_in_dir.Length;
+                        //increment the counter
+                        _iterator_counta++;
+                        //set the global current position counter
+                        _current_media_file_pos = _iterator_counta;
+
+                        /*
+                         params
+                         quotes for json formating
+                         filename with no extension
+                         file name with extension
+                         file size in kilobytes
+                         file type being the extension
+                         path folder to be created if does not exists
+                         output file for json to be created if does not exists
+                         */
+                        saveplaylistjson(strQuote, strfilenamewithnoextension, strfilename, strfilesize, strfiletype, strpathfolder, str_file_to_create);
+
+                        _progressBarNotificationEventname.Invoke(this, new progressBarNotificationEventArgs(_iterator_counta, _files_count));
+
+                    }
+                    break;
+                case DBContract.video:
+                    //folder with media files
+                    _str_path = _str_path + DBContract.video;
+                    //filter for mp4 files that are compatible with browsers
+                    _arr_files_in_dir = Directory.GetFiles(_str_path, "*.mp4*", SearchOption.AllDirectories);
+                    //loop through each file, get  file info and format it into json and append into output file.
+                    _files_count = _arr_files_in_dir.Length;
+                    _iterator_counta = 0;
+                    _total_media_files = _files_count;
+
+                    foreach (var _str_file in _arr_files_in_dir)
+                    {
+                        //current file
+                        var _current_file = _str_file;
+                        //log the current file name 
+                        this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("processing file [ " + _current_file + " ]", TAG));
+                        //get file information and populate variables
+                        FileInfo inf = new FileInfo(_current_file);
+                        //size of File in kilobytes
+                        strfilesize = inf.Length.ToString();
+                        //file name with extension
+                        strfilename = inf.Name;
+                        //file type is the extension
+                        strfiletype = inf.Extension.Split(new[] { "." }, StringSplitOptions.None)[1];
+
+                        //escape quotes with the verbatim operator
+                        strQuote = @"""";
+                        //file name with no extension
+                        strfilenamewithnoextension = Path.GetFileNameWithoutExtension(_current_file);
+                        //log the current output file path  
+                        this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("ouput file [ " + str_file_to_create + " ]", TAG));
+                        //files count
+                        _files_count = _arr_files_in_dir.Length;
+                        //increment the counter
+                        _iterator_counta++;
+                        //set the global current position counter
+                        _current_media_file_pos = _iterator_counta;
+
+                        /*
+                         params
+                         quotes for json formating
+                         filename with no extension
+                         file name with extension
+                         file size in kilobytes
+                         file type being the extension
+                         path folder to be created if does not exists
+                         output file for json to be created if does not exists
+                         */
+                        saveplaylistjson(strQuote, strfilenamewithnoextension, strfilename, strfilesize, strfiletype, strpathfolder, str_file_to_create);
+
+                        _progressBarNotificationEventname.Invoke(this, new progressBarNotificationEventArgs(_iterator_counta, _files_count));
+
+                    }
+                    break;
+                case DBContract.series:
+                    //folder with media files
+                    _str_path = _str_path + DBContract.series;
+                    //get all first level folders in series
+                    var _dirs_in_series = Directory.GetDirectories(_str_path);
+                    //files processed count
+                    _iterator_counta = 0;
+
+                    //filter for mp4 files that are compatible with browsers
+                    var _total_files_in_dir_count = Directory.GetFiles(_str_path, "*.mp4*,*.mp3*,*.m4a*", SearchOption.AllDirectories).Length;
+
+                    //loop through all top level folders in series
+                    foreach (var _series_dir in _dirs_in_series)
+                    {
+                        //filter for mp4 files that are compatible with browsers
+                        _arr_files_in_dir = Directory.GetFiles(_series_dir, "*.mp4*,*.mp3*,*.m4a*", SearchOption.AllDirectories);
+                        //files count in current folder
+                        _files_count = _arr_files_in_dir.Length;
+                        _total_media_files += _files_count;
+                        //split the path to get the last folder name
+                        var _dir_names_arr = _series_dir.Split(new[] { "\\" }, StringSplitOptions.None);
+                        var _arr_length = _dir_names_arr.Length;
+                        var _str_last_dir_name = _dir_names_arr[_arr_length - 1];
+                        var _media_folder = _str_last_dir_name;
+
+                        //loop through each file, get  file info and format it into json and append into output file.
+                        foreach (var _str_file in _arr_files_in_dir)
+                        {
+                            //current file
+                            var _current_file = _str_file;
+                            //log the current file name 
+                            this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("processing file [ " + _current_file + " ]", TAG));
+                            //get file information and populate variables
+                            FileInfo inf = new FileInfo(_current_file);
+                            //size of File in kilobytes
+                            strfilesize = inf.Length.ToString();
+                            //file name with extension
+                            strfilename = inf.Name;
+                            //file type is the extension
+                            strfiletype = inf.Extension.Split(new[] { "." }, StringSplitOptions.None)[1];
+
+                            //escape quotes with the verbatim operator
+                            strQuote = @"""";
+                            //file name with no extension
+                            strfilenamewithnoextension = Path.GetFileNameWithoutExtension(_current_file);
+                            //log the current output file path  
+                            this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("ouput file [ " + str_file_to_create + " ]", TAG));
+                            //files count
+                            _files_count = _arr_files_in_dir.Length;
+                            //increment the counter
+                            _iterator_counta++;
+                            //set the global current position counter
+                            _current_media_file_pos = _iterator_counta;
+
+                            /*
+                             params
+                             quotes for json formating
+                             filename with no extension
+                             file name with extension
+                             file size in kilobytes
+                             file type being the extension
+                             path folder to be created if does not exists
+                             output file for json to be created if does not exists
+                             */
+                            saveseriesplaylistjson(strQuote, strfilenamewithnoextension, strfilename, strfilesize, strfiletype, strpathfolder, str_file_to_create, _media_folder, _total_files_in_dir_count);
+
+                            _progressBarNotificationEventname.Invoke(this, new progressBarNotificationEventArgs(_iterator_counta, _total_files_in_dir_count));
+
+                        }
+                    }
+                    break;
+                case DBContract.audio:
+                    //folder with media files
+                    _str_path = _str_path + DBContract.audio;
+                    //filter for mp4 files that are compatible with browsers
+                    _arr_files_in_dir = Directory.GetFiles(_str_path, "*.mp3*", SearchOption.AllDirectories);
+                    //loop through each file, get  file info and format it into json and append into output file.
+                    _files_count = _arr_files_in_dir.Length;
+                    _iterator_counta = 0;
+                    _total_media_files = _files_count;
+
+                    foreach (var _str_file in _arr_files_in_dir)
+                    {
+                        //current file
+                        var _current_file = _str_file;
+                        //log the current file name 
+                        this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("processing file [ " + _current_file + " ]", TAG));
+                        //get file information and populate variables
+                        FileInfo inf = new FileInfo(_current_file);
+                        //size of File in kilobytes
+                        strfilesize = inf.Length.ToString();
+                        //file name with extension
+                        strfilename = inf.Name;
+                        //file type is the extension
+                        strfiletype = inf.Extension.Split(new[] { "." }, StringSplitOptions.None)[1];
+
+                        //escape quotes with the verbatim operator
+                        strQuote = @"""";
+                        //file name with no extension
+                        strfilenamewithnoextension = Path.GetFileNameWithoutExtension(_current_file);
+                        //log the current output file path  
+                        this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs("ouput file [ " + str_file_to_create + " ]", TAG));
+                        //files count
+                        _files_count = _arr_files_in_dir.Length;
+                        //increment the counter
+                        _iterator_counta++;
+                        //set the global current position counter
+                        _current_media_file_pos = _iterator_counta;
+
+                        /*
+                         params
+                         quotes for json formating
+                         filename with no extension
+                         file name with extension
+                         file size in kilobytes
+                         file type being the extension
+                         path folder to be created if does not exists
+                         output file for json to be created if does not exists
+                         */
+                        saveplaylistjson(strQuote, strfilenamewithnoextension, strfilename, strfilesize, strfiletype, strpathfolder, str_file_to_create);
+
+                        _progressBarNotificationEventname.Invoke(this, new progressBarNotificationEventArgs(_iterator_counta, _files_count));
+
+                    }
+                    break;
+            }
+
+        }
+
+        /*
+         params
+         quotes for json formating
+         filename with no extension
+         file name with extension
+         file size in kilobytes
+         file type being the extension
+         path folder to be created if does not exists
+         output file for json to be created if does not exists
+         */
+        public void saveplaylistjson(String strQuote, String strfilenamewithnoextension, String strfilename, String strfilesize, String strfiletype, String _strpathfolder, String _str_file)
+        {
+            try
+            {
+
+                /*using is syntactic sugar that allows you to guarantee that a resource is cleaned up without needing an explicit try finally block. This means your code will be much cleaner, and you won't leak non-managed resources.*/
+                using (FileStream _fileStream = new FileStream(_str_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                {
+                    //format the json output
+                    StreamWriter sw = new StreamWriter(_fileStream);
+                    //if we are at the beggining start with an opening brace to make it a json array
+                    if (_current_media_file_pos == 1)
+                    {
+                        sw.WriteLine("{");
+                    }
+                    //json object identifier name
+                    sw.Write(strQuote + strfilenamewithnoextension + strQuote);
+                    //separate key part from value part
+                    sw.WriteLine(": ");
+                    //begining definition of the object
+                    sw.WriteLine("{");
+                    //property key
+                    sw.Write(strQuote + "medianame" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, terminate with a comma to insert more properties
+                    sw.WriteLine(strQuote + strfilename + strQuote + ",");
+                    //property key
+                    sw.Write(strQuote + "mediatitle" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, terminate with a comma to insert more properties
+                    sw.WriteLine(strQuote + strfilenamewithnoextension + strQuote + ",");
+                    //property key
+                    sw.Write(strQuote + "mediasize" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, terminate with a comma to insert more properties
+                    sw.WriteLine(strQuote + strfilesize + strQuote + ",");
+                    //property key
+                    sw.Write(strQuote + "mediatype" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, last property terminate with space
+                    sw.WriteLine(strQuote + strfiletype + strQuote + "");
+                    //if we are at the end terminate with a closing brace to close the object and array
+                    if (_current_media_file_pos == _total_media_files)
+                    {
+                        //close the object with no comma
+                        sw.WriteLine("}");
+                        //close the array with no comma
+                        sw.WriteLine("}");
+                    }
+                    else
+                    {
+                        //close the object, terminate with a comma to insert more objects
+                        sw.WriteLine("},");
+                    }
+
+                    //sw.Close(); This will close ms and when we try to use ms later it will cause an exception
+                    sw.Flush();
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs(ex.ToString(), TAG));
+            }
+
+        }
+
+        /*
+         params
+         quotes for json formating
+         filename with no extension
+         file name with extension
+         file size in kilobytes
+         file type being the extension
+         path folder to be created if does not exists
+         output file for json to be created if does not exists
+         */
+        public void saveseriesplaylistjson(String strQuote, String strfilenamewithnoextension, String strfilename, String strfilesize, String strfiletype, String _strpathfolder, String _str_file, String strmediafoldername, int total_files_count)
+        {
+            try
+            {
+
+                /*using is syntactic sugar that allows you to guarantee that a resource is cleaned up without needing an explicit try finally block. This means your code will be much cleaner, and you won't leak non-managed resources.*/
+                using (FileStream _fileStream = new FileStream(_str_file, FileMode.Append, FileAccess.Write, FileShare.ReadWrite))
+                {
+                    //format the json output
+                    StreamWriter sw = new StreamWriter(_fileStream);
+                    //if we are at the beggining start with an opening brace to make it a json array
+                    if (_current_media_file_pos == 1)
+                    {
+                        sw.WriteLine("{");
+                    }
+                    //json object identifier name
+                    sw.Write(strQuote + strfilenamewithnoextension + strQuote);
+                    //separate key part from value part
+                    sw.WriteLine(": ");
+                    //begining definition of the object
+                    sw.WriteLine("{");
+                    //property key
+                    sw.Write(strQuote + "medianame" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, terminate with a comma to insert more properties
+                    sw.WriteLine(strQuote + strfilename + strQuote + ",");
+                    //property key
+                    sw.Write(strQuote + "mediatitle" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, terminate with a comma to insert more properties
+                    sw.WriteLine(strQuote + strfilenamewithnoextension + strQuote + ",");
+                    //property key
+                    sw.Write(strQuote + "mediasize" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, terminate with a comma to insert more properties
+                    sw.WriteLine(strQuote + strfilesize + strQuote + ",");
+                    //property key
+                    sw.Write(strQuote + "mediatype" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, last property terminate with space
+                    sw.WriteLine(strQuote + strfiletype + strQuote + ",");
+                    //property key
+                    sw.Write(strQuote + "mediafoldername" + strQuote);
+                    //separate key part from value part
+                    sw.Write(": ");
+                    //property value, last property terminate with space
+                    sw.WriteLine(strQuote + strmediafoldername + strQuote + "");
+                    //if we are at the end terminate with a closing brace to close the object and array
+                    if (_current_media_file_pos == total_files_count)
+                    {
+                        //close the object with no comma
+                        sw.WriteLine("}");
+                        //close the array with no comma
+                        sw.WriteLine("}");
+                    }
+                    else
+                    {
+                        //close the object, terminate with a comma to insert more objects
+                        sw.WriteLine("},");
+                    }
+
+                    //sw.Close(); This will close ms and when we try to use ms later it will cause an exception
+                    sw.Flush();
+
+                }
+
+            }
+            catch (Exception ex)
+            {
+                this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs(ex.ToString(), TAG));
+            }
+
+        }
+
+        private void btnexit_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void create_playlist_Load(object sender, EventArgs e)
+        {
+            //app version
+            var _buid_version = Application.ProductVersion;
+            lblbuildversion.Text = _buid_version;
+            //initalize the countdown
+            stopWatch = new Stopwatch();
+            stopWatch.Start();
+
+            // Timers namespace rather than Threading
+            System.Timers.Timer timer = new System.Timers.Timer(); // Doesn't require any args
+            timer.Interval = 1000;
+            timer.Elapsed += timer_Elapsed; // Uses an event instead of a delegate
+            timer.Start(); // Start the timer
+            //populate the media type combo box
+            cbomediatype.Items.AddRange(new[] { 
+                "series", 
+                "video",
+                "movie",
+                "audio"
+            });
+            //set app path to hold the current root directory of the application
+            _apppath = Application.StartupPath;
+            //select the first item
+            cbomediatype.SelectedIndex = 0;
+            //on press enter keyboard button invoke click handler for btngenerate_playlist_json 
+            this.AcceptButton = btngenerate_playlist_json;
+            //on press escape keyboard button invoke click handler for btnexit 
+            this.CancelButton = btnexit;
+            //set focus to combo box
+            cbomediatype.Focus();
+
+            //reset progress controls
+            toolStripProgressBar.Value = 0;
+            lblprogresscounta.Text = string.Empty;
+            lblprogresscounta.TextChanged += lblprogresscounta_TextChanged;
+
+            txtsource.Text = @"D:\data\20170628\series";
+            txtdestination.Text = @"D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\nyaxplaylistapp\bin\Debug\series";
+
+        }
+
+        void timer_Elapsed(object sender, EventArgs e)
+        {
+            //current running time
+            DateTime currentDate = DateTime.Now;
+            String dateTimenow = currentDate.ToString("dd(dddd)-MM(MMMM)-yyyy HH:mm:ss");
+            lbldatetime.Text = dateTimenow;
+            //countdown
+            lbltimelapsed.Text = String.Format("Time elapsed: {0:hh\\:mm\\:ss\\.fffffff}", stopWatch.Elapsed);
+        }
+
+        void lblprogresscounta_TextChanged(object sender, EventArgs e)
+        {
+            var evt = e;
+            var snd = sender;
+        }
+
+        private void cbomediatype_SelectedIndexChanged(object sender, EventArgs e)
+        {
+
+            var _selected_media_type = cbomediatype.Text;
+            var _source_path = "";
+            var _source_destination = "";
+
+            switch (_selected_media_type)
+            {
+                case DBContract.audio:
+                    _source_path = @"D:\data\20170628\audio";
+                    _source_destination = @"D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\nyaxplaylistapp\bin\Debug\audio";
+                    break;
+                case DBContract.movie:
+                    _source_path = @"D:\data\20170628\movie";
+                    _source_destination = @"D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\nyaxplaylistapp\bin\Debug\movie";
+                    break;
+                case DBContract.video:
+                    _source_path = @"D:\data\20170628\video";
+                    _source_destination = @"D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\nyaxplaylistapp\bin\Debug\video";
+                    break;
+                case DBContract.series:
+                    _source_path = @"D:\data\20170628\series";
+                    _source_destination = @"D:\wakxpx\csharp\visualstudio\nyaxplaylistapp\nyaxplaylistapp\bin\Debug\series";
+                    break; 
+            }
+            txtsource.Text = _source_path;
+            txtdestination.Text = _source_destination; 
+        }
+
+        private void notifyIconntharene_Click(object sender, EventArgs e)
+        {
+            this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs(get_app_info(), TAG));
+        }
+
+        private void notifyIconntharene_DoubleClick(object sender, EventArgs e)
+        {
+            this._notificationmessageEventname.Invoke(this, new notificationmessageEventArgs(get_app_info(), TAG));
+        }
+
+        string get_app_info()
+        {
+            StringBuilder _sb = new StringBuilder();
+            _sb.AppendLine("ProductVersion: " + Application.ProductVersion);
+            _sb.AppendLine("CompanyName: " + Application.CompanyName);
+            _sb.AppendLine("ProductName: " + Application.ProductName);
+            return _sb.ToString();
+        }
+
+
+
+
+    }
+}

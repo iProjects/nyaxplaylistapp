@@ -1,0 +1,236 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{F0214ABF-91B3-4900-B45A-1A363E3707A4}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>nyaxplaylistapp_ui</RootNamespace>
+    <AssemblyName>nyaxplaylistapp_ui</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>favicon.ico</ApplicationIcon>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>nyaxplaylistapp_ui.Program</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="CrystalDecisions.CrystalReports.Engine, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="CrystalDecisions.ReportSource, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304" />
+    <Reference Include="CrystalDecisions.Shared, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304" />
+    <Reference Include="CrystalDecisions.Windows.Forms, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="itextsharp, Version=4.0.2.0, Culture=neutral, PublicKeyToken=8354ae6d2174ddca">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>libs\itextsharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Office.Interop.Excel, Version=15.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+      <HintPath>C:\Program Files (x86)\Microsoft Visual Studio 12.0\Visual Studio Tools for Office\PIA\Office15\Microsoft.Office.Interop.Excel.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Services" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="create_playlist.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="create_playlist.Designer.cs">
+      <DependentUpon>create_playlist.cs</DependentUpon>
+    </Compile>
+    <Compile Include="msgboxform.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="msgboxform.designer.cs">
+      <DependentUpon>msgboxform.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="reports\CreateExcelDoc.cs" />
+    <Compile Include="reports\CrystalReport.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CrystalReport.rpt</DependentUpon>
+      <SubType>Component</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="reports\crystal_reports_form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="reports\crystal_reports_form.Designer.cs">
+      <DependentUpon>crystal_reports_form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="reports\excelbuilder.cs" />
+    <Compile Include="reports\pdfbuilder.cs" />
+    <Compile Include="reports\pdfgen.cs" />
+    <Compile Include="reports\pdfviewer.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="reports\pdfviewer.Designer.cs">
+      <DependentUpon>pdfviewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="reports\reportbuilder.cs" />
+    <Compile Include="reports\reportmodel.cs" />
+    <Compile Include="reports\reportsDataSet.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>reportsDataSet.xsd</DependentUpon>
+    </Compile>
+    <Compile Include="reports\reports_form.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="reports\reports_form.Designer.cs">
+      <DependentUpon>reports_form.cs</DependentUpon>
+    </Compile>
+    <Compile Include="reports\VVX_File.cs" />
+    <Compile Include="reports\VVX_FileDialog.cs" />
+    <Compile Include="reports\VVX_ImageTools.cs" />
+    <Compile Include="reports\VVX_MsgBox.cs" />
+    <Compile Include="SplashScreen.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <EmbeddedResource Include="create_playlist.resx">
+      <DependentUpon>create_playlist.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="msgboxform.resx">
+      <DependentUpon>msgboxform.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
+    </Compile>
+    <EmbeddedResource Include="reports\CrystalReport.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>CrystalReport.cs</LastGenOutput>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+    <EmbeddedResource Include="reports\crystal_reports_form.resx">
+      <DependentUpon>crystal_reports_form.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="reports\pdfviewer.resx">
+      <DependentUpon>pdfviewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="reports\reports_form.resx">
+      <DependentUpon>reports_form.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SplashScreen.resx">
+      <DependentUpon>SplashScreen.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="about\about.css">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="about\about.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="about\about.js">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="favicon.ico" />
+    <Content Include="images\add.ico" />
+    <Content Include="images\chart.ico" />
+    <Content Include="images\delete.ico" />
+    <Content Include="images\edit.ico" />
+    <Content Include="images\filter.ico" />
+    <Content Include="images\filter_icon.ico" />
+    <Content Include="images\weight.ico" />
+    <Content Include="images\weight.png" />
+    <Content Include="images\weight_app.ico" />
+    <Content Include="images\weight_app.png" />
+    <Content Include="images\weight_scale.ico" />
+    <Content Include="libs\itextsharp.dll" />
+    <Content Include="libs\iTextSharp.xml" />
+    <Content Include="resources\Dollar.ico" />
+    <Content Include="resources\logo.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TimeStampObserver.xml" />
+    <None Include="reports\reportsDataSet.xsc">
+      <DependentUpon>reportsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="reports\reportsDataSet.xsd">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSetGenerator</Generator>
+      <LastGenOutput>reportsDataSet.Designer.cs</LastGenOutput>
+    </None>
+    <None Include="reports\reportsDataSet.xss">
+      <DependentUpon>reportsDataSet.xsd</DependentUpon>
+    </None>
+    <None Include="resources\powermage.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\nyaxplaylistapp_dal\nyaxplaylistapp_dal.csproj">
+      <Project>{dea62c38-e516-4ac9-9971-e3d83d41e912}</Project>
+      <Name>nyaxplaylistapp_dal</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{C0C07587-41A7-46C8-8FBD-3F9C8EBE2DDC}" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
